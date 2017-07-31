@@ -21,6 +21,9 @@ if [ "$(uname -s)" = "Darwin" ]; then
     sed="ssed"
 fi
 
+# define branches, which should survive
+branches=(b_20170628_R2_8_5)
+
 data_file="$1"
 name_urls="$(cat $data_file)"
 repo_name=
@@ -52,8 +55,18 @@ function repo_master_to_subdir {
 
 empty_repo_or_die
 
+# itrate all branches
+# master,b_20171125_v222,mongo_to MySQL
+for branch in $branches; do
+
+echo "starting work for branch: $branch"
+
+# iterate all repositories
 for a in $name_urls; do
     split_line "$a"
+
+    echo "starting work for repository: $repo_name"
+
     # checkout new branch (e.g. data-gateway)
     git checkout --orphan "$repo_name"
     git rm -qrf --ignore-unmatch .
@@ -61,22 +74,28 @@ for a in $name_urls; do
     git remote add "$repo_name" "$repo_url"
     # fetch all
     git fetch "$repo_name"
-    # merge origin/master -> data-gateway/master
-    git merge "$repo_name/master"
+    # merge origin/$branch -> local/data-gateway
+    git merge "$repo_name/$branch"
     # migrate data
     repo_master_to_subdir
     # remove remote
     git remote remove "$repo_name"
 done
 
-# go to master
-git checkout --orphan master
+echo "finished with first step of migration for branch: $branch"
+
+# go to target branch
+git checkout --orphan $branch
 # remove all
 git rm -qrf --ignore-unmatch .
 
 for a in $name_urls; do
     split_line "$a"
-    # merge all prepared branches into master (data-gateway -> master, fw-dataprocessing -> master)
+    echo "goint to do final merge for repo $repo_name and branch $branch"
+    # merge all prepared branches into target branch (data-gateway -> master, fw-dataprocessing -> master)
     git merge --ff -m "$repo_name: $self_name monolithic conversion merge" "$repo_name"
+    echo "merged branch $repo_name -> $branch"
     git branch -D "$repo_name"
+done
+
 done
