@@ -41,12 +41,12 @@ function split_line {
 }
 
 function repo_master_to_subdir {
-    git filter-branch -f --index-filter \
+    git filter-branch --tag-name-filter 'cat' -f --index-filter  \
         "git ls-files -s | ${sed} \"s|\t\\\"*|&${repo_name}/|\" |
         GIT_INDEX_FILE=\$GIT_INDEX_FILE.new git update-index --index-info &&
         mv \"\$GIT_INDEX_FILE.new\" \"\$GIT_INDEX_FILE\"" HEAD
 
-    git filter-branch -f --msg-filter "/bin/echo -n \"${repo_name}: \" && cat"
+    #git filter-branch -f --msg-filter "/bin/echo -n \"${repo_name}: \" && cat"
 
 }
 
@@ -54,22 +54,29 @@ empty_repo_or_die
 
 for a in $name_urls; do
     split_line "$a"
-
+    # checkout new branch (e.g. data-gateway)
     git checkout --orphan "$repo_name"
     git rm -qrf --ignore-unmatch .
+    # add remote
     git remote add "$repo_name" "$repo_url"
+    # fetch all
     git fetch "$repo_name"
+    # merge origin/master -> data-gateway/master
     git merge "$repo_name/master"
+    # migrate data
     repo_master_to_subdir
+    # remove remote
     git remote remove "$repo_name"
 done
 
+# go to master
 git checkout --orphan master
+# remove all
 git rm -qrf --ignore-unmatch .
 
 for a in $name_urls; do
     split_line "$a"
-
-    git merge --allow-unrelated-histories --ff -m "$repo_name: $self_name monolithic conversion merge" "$repo_name"
+    # merge all prepared branches into master (data-gateway -> master, fw-dataprocessing -> master)
+    git merge --ff -m "$repo_name: $self_name monolithic conversion merge" "$repo_name"
     git branch -D "$repo_name"
 done
