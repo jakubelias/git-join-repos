@@ -21,8 +21,23 @@ if [ "$(uname -s)" = "Darwin" ]; then
     sed="ssed"
 fi
 
+
 # define branches, which should survive
-branches=(b_20170628_R2_8_5)
+
+function config_git {
+git config --global user.email "merger@example.com"
+git config --global user.name "Repo Joiner"
+git config --global credential.helper "cache --timeout=36000"
+}
+
+branches=(master b_20170628_R2_8_5 b_20170725_R2_8_6 MongoToMsSql EMFIPM-406-guFixes)
+
+echo "considered branches:"
+for branch in "${branches[@]}"; do
+echo $branch
+done
+
+GIT_SSL_NO_VERIFY=true
 
 data_file="$1"
 name_urls="$(cat $data_file)"
@@ -49,15 +64,16 @@ function repo_master_to_subdir {
         GIT_INDEX_FILE=\$GIT_INDEX_FILE.new git update-index --index-info &&
         mv \"\$GIT_INDEX_FILE.new\" \"\$GIT_INDEX_FILE\"" HEAD
 
-    #git filter-branch -f --msg-filter "/bin/echo -n \"${repo_name}: \" && cat"
+    git filter-branch --tag-name-filter 'cat' -f --msg-filter "/bin/echo -n \"${repo_name}: \" && cat"
 
 }
 
+config_git
 empty_repo_or_die
 
 # itrate all branches
 # master,b_20171125_v222,mongo_to MySQL
-for branch in $branches; do
+for branch in "${branches[@]}"; do
 
 echo "starting work for branch: $branch"
 
