@@ -25,12 +25,12 @@ fi
 # define branches, which should survive
 
 function config_git {
-git config --global user.email "merger@example.com"
-git config --global user.name "Repo Joiner"
+git config --global user.email "joiner@unicorn.eu"
+git config --global user.name "EMFIP Repository Joiner"
 git config --global credential.helper "cache --timeout=36000"
 }
 
-branches=(master b_20170628_R2_8_5 b_20170725_R2_8_6 MongoToMsSql EMFIPM-406-guFixes)
+branches=(master b_20170628_R2_8_5 b_20170725_R2_8_6 MongoToMsSql EMFIPM-406-guFixes 20170125-logback-decoder b_20150921_v_EIDM b20170504_jsmaps)
 
 echo "considered branches:"
 for branch in "${branches[@]}"; do
